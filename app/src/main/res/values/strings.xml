@@ -3,4 +3,6 @@
     <string name="no_shells_msg">Need more than one shell before starting</string>
     <string name="add_live">Add live</string>
     <string name="add_blank">Add blank</string>
+    <string name="remove_live">Remove live</string>
+    <string name="remove_blank">Remove blank</string>
 </resources>

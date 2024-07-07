@@ -33,6 +33,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.metalpizzacat.roulettechance.ui.theme.RouletteChanceTheme
 import kotlinx.coroutines.launch
+import kotlin.math.max
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -109,16 +110,30 @@ fun ChanceManager() {
                     // idk
                 })
             } else {
-                Row {
-                    Button(onClick = {
-                        liveShellCount++
-                    }) {
-                        Text(stringResource(R.string.add_live))
+                Column {
+                    Row {
+                        Button(onClick = {
+                            liveShellCount++
+                        }) {
+                            Text(stringResource(R.string.add_live))
+                        }
+                        Button(onClick = {
+                            blankShellCount++
+                        }) {
+                            Text(stringResource(R.string.add_blank))
+                        }
                     }
-                    Button(onClick = {
-                        blankShellCount++
-                    }) {
-                        Text(stringResource(R.string.add_blank))
+                    Row {
+                        Button(onClick = {
+                            liveShellCount = max(0, liveShellCount - 1)
+                        }) {
+                            Text(stringResource(R.string.remove_live))
+                        }
+                        Button(onClick = {
+                            blankShellCount = max(0, blankShellCount - 1)
+                        }) {
+                            Text(stringResource(R.string.remove_blank))
+                        }
                     }
                 }
 
