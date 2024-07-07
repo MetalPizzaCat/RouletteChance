@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">RouletteChance</string>
+    <string name="no_shells_msg">Need more than one shell before starting</string>
+    <string name="add_live">Add live</string>
+    <string name="add_blank">Add blank</string>
 </resources>

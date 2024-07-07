@@ -5,26 +5,34 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.metalpizzacat.roulettechance.ui.theme.RouletteChanceTheme
-import kotlin.math.max
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,63 +51,96 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+enum class ShellState {
+    UNKNOWN,
+    LIVE,
+    BLANK
+}
+
+fun getNextShellState(current: ShellState) = when (current) {
+    ShellState.LIVE -> ShellState.BLANK
+    ShellState.BLANK -> ShellState.UNKNOWN
+    ShellState.UNKNOWN -> ShellState.LIVE
+}
+
 
 @Composable
 fun ChanceManager() {
     var liveShellCount by remember { mutableIntStateOf(0) }
     var blankShellCount by remember { mutableIntStateOf(0) }
-    var current by remember { mutableIntStateOf(0) }
+    var isInRound by remember { mutableStateOf(false) }
 
-    val known = remember { mutableStateListOf<Int>() }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
-    Column {
-        Button(onClick = {
-            liveShellCount = 0
-            blankShellCount = 0
-            current = 0
-            known.clear()
+
+    Scaffold(snackbarHost = {
+        SnackbarHost(hostState = snackbarHostState)
+    },
+        bottomBar = {
+            BottomAppBar {
+                Button(
+                    onClick = {
+                        liveShellCount = 0
+                        blankShellCount = 0
+                        isInRound = false
+                    },
+                ) {
+                    Text("Reset")
+                }
+                Spacer(modifier = Modifier.weight(1f))
+                Button(onClick = {
+                    if (liveShellCount > 0 || blankShellCount > 0) {
+                        isInRound = true
+                    } else {
+                        scope.launch {
+                            snackbarHostState.showSnackbar(message = "Needs more than one shell")
+                        }
+                    }
+                }, modifier = Modifier.fillMaxWidth(0.5f)) {
+                    Text("Start")
+                }
+            }
         }) {
-            Text("Reset")
-        }
+        Column(modifier = Modifier.padding(it)) {
 
-        Row {
-            Button(onClick = {
-                liveShellCount++
-            }) {
-                Text("Add live")
-            }
-            Button(onClick = {
-                blankShellCount++
-            }) {
-                Text("Add blank")
-            }
-        }
+            if (isInRound) {
+                RoundManager(lives = liveShellCount, blanks = blankShellCount, roundEnded = {
+                    // idk
+                })
+            } else {
+                Row {
+                    Button(onClick = {
+                        liveShellCount++
+                    }) {
+                        Text(stringResource(R.string.add_live))
+                    }
+                    Button(onClick = {
+                        blankShellCount++
+                    }) {
+                        Text(stringResource(R.string.add_blank))
+                    }
+                }
 
-        if (blankShellCount <= 0 && liveShellCount <= 0) {
-            Text("No ammo in the clip")
-        } else {
-            ChanceViewer(
-                blanks = blankShellCount,
-                live = liveShellCount,
-            )
-            Row {
-                Button(onClick = { liveShellCount = max(liveShellCount - 1, 0) }) {
-                    Text("Shoot live")
-                }
-                Button(onClick = { blankShellCount = max(blankShellCount - 1, 0) }) {
-                    Text("Shoot blank")
-                }
+                ShellCounter(
+                    blanks = blankShellCount,
+                    live = liveShellCount,
+                )
             }
+
+
         }
     }
+
 }
 
 /**
+ * Displays the remaining shells
  * @param blanks Current amount of blanks
  * @param live Current amount of live shells
  */
 @Composable
-fun ChanceViewer(blanks: Int, live: Int) {
+fun ShellCounter(blanks: Int, live: Int) {
 
     Column {
         Row {
@@ -120,16 +161,37 @@ fun ChanceViewer(blanks: Int, live: Int) {
                 )
             }
         }
-        Text("Chances: ")
-        Text("Next shell is live: ${((live.toFloat() / ((live + blanks).toFloat())) * 100f)}%")
-        Text("Next shell is live: ${((blanks.toFloat() / ((live + blanks).toFloat())) * 100f)}%")
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun InterfacePreview() {
+fun ShellStatsPreview() {
     RouletteChanceTheme {
-        ChanceViewer(blanks = 1, live = 1)
+        ShellCounter(blanks = 1, live = 1)
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun AppPreview() {
+    RouletteChanceTheme {
+        ChanceManager()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ShellViewerPreview() {
+    RouletteChanceTheme {
+        ShellViewer(
+            shells = mutableListOf(
+                ShellState.UNKNOWN,
+                ShellState.UNKNOWN,
+                ShellState.BLANK,
+                ShellState.LIVE
+            ),
+            current = 2
+        ) { _, _ -> run {} }
     }
 }
